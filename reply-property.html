@@ -1,0 +1,209 @@
+<!--
+ * @Author: mrrs878@foxmail.com
+ * @Date: 2022-04-24 22:34:34
+ * @LastEditors: mrrs878@foxmail.com
+ * @LastEditTime: 2022-04-24 22:35:10
+-->
+
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Document</title>
+</head>
+
+<body>
+  <template id="replyTemplate">
+    <style>
+      :host {
+        --margin: 10px;
+        --padding: 16px;
+        --btn-padding: 10px;
+        --radius: 4px;
+        --white-color: #ffffff;
+        --gray-color: #00000073;
+        --primary-color: #0081FF;
+        --primary-color-hover: #40a9ff;
+        --primary-color-outline: rgba(24, 144, 255, 0.2);
+
+        --border-color: #d9d9d9;
+
+        font-family: -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, Helvetica Neue, Arial, Noto Sans, sans-serif, apple color emoji, segoe ui emoji, Segoe UI Symbol, noto color emoji;
+      }
+
+      .reply-c {
+        display: flex;
+        flex-direction: column;
+        width: 400px;
+      }
+
+      .comment-c {
+        display: flex;
+        padding: var(--padding) 0;
+      }
+
+      .comment-c:first-child {
+        padding-top: 0;
+      }
+
+      .comment-content .nick-name,
+      .reply-time {
+        color: var(--gray-color);
+        font-size: 12px;
+      }
+
+      .comment-content .reply-time {
+        margin-left: 5px;
+      }
+
+      .comment-content .comment-text {
+        margin-top: 5px;
+        font-size: 14px;
+        line-height: 1.5715;
+        ;
+      }
+
+      .avatar {
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        margin-right: var(--margin);
+      }
+
+      .submit-form {
+        display: flex;
+        padding: var(--padding) 0;
+      }
+
+      .input-form {
+        display: flex;
+        flex-direction: column;
+      }
+
+      .input {
+        border: 1px solid var(--border-color);
+        transition: all .3s, height 0s;
+        padding: 4px 11px;
+        border-radius: var(--radius);
+        resize: vertical;
+        font-family: inherit;
+        line-height: 1.5715;
+        vertical-align: bottom;
+        min-height: 32px;
+      }
+
+      .input:focus {
+        border-color: var(--primary-color-hover);
+        box-shadow: 0 0 0 2px var(--primary-color-outline);
+        border-right-width: 1px;
+        outline: 0;
+      }
+
+      .submit-btn {
+        width: max-content;
+        height: 30px;
+        margin-top: var(--margin);
+        background: var(--primary-color);
+        border-radius: var(--radius);
+        border: none;
+        color: var(--white-color);
+        padding-left: var(--btn-padding);
+        padding-right: var(--btn-padding);
+      }
+    </style>
+    <div class="reply-c">
+      <div class="comments-c" id="commentsContainer"></div>
+      <div class="submit-form">
+        <img src='https://joeschmoe.io/api/v1/random' id="defaultAvatar" alt="" class="avatar">
+        <div class="input-form">
+          <textarea class="input" id="input" placeholder="说点什么吧" cols="50" rows="5"></textarea>
+          <button class="submit-btn" id="submitBtn">Add Comment</button>
+        </div>
+      </div>
+    </div>
+  </template>
+
+  <m-reply id="reply" />
+
+  <script type="module">
+
+    const sleep = (timeout) => new Promise((resolve) => setTimeout(resolve, timeout));
+
+    class Reply extends HTMLElement {
+      static get observedAttributes() {
+        return ['comments'];
+      }
+
+      constructor() {
+        super();
+
+        this._comments = [];
+        this.attachShadow({ mode: 'open' });
+        const template = document.querySelector('#replyTemplate');
+        const content = document.importNode(template.content, true);
+        this.shadowRoot.appendChild(content);
+      }
+
+      get comments() {
+        return this._comments;
+      }
+
+      set comments(newValue) {
+        this._comments = newValue;
+        this.renderComments(newValue);
+      }
+
+      connectedCallback() {
+        const submitBtn = this.shadowRoot.querySelector('#submitBtn');
+        const commentInput = this.shadowRoot.querySelector('#input');
+        submitBtn.addEventListener('click', () => {
+          const res = this.dispatchEvent(new CustomEvent('submitComment', {
+            detail: commentInput.value,
+          }));
+          if (res) {
+            commentInput.value = '';
+          }
+        });
+        this.setAttribute('avatar', this.avatar)
+      }
+
+      renderComments(comments) {
+        const Comment = ({ avatar, nickName, comment }) => (`
+          <div class="comment-c">
+            <img src="${avatar}" alt="" class="avatar">
+            <div class="comment-content">
+              <div>
+                <span class="nick-name">${nickName}</span>
+                <span class="reply-time">几秒前</span>
+              </div>
+              <div class="comment-text">${comment}</div>
+            </div>
+          </div>
+        `);
+        const commentsContainer = this.shadowRoot.querySelector('#commentsContainer');
+        commentsContainer.innerHTML = comments.reduce((acc, cur) => `${acc}${Comment(cur)}`, '');
+      }
+    }
+
+    window.customElements.define('m-reply', Reply);
+
+    const nickName = "Echo";
+    const avatar = "https://joeschmoe.io/api/v1/random";
+    const reply = document.querySelector('#reply');
+    const comments = [];
+
+    reply.addEventListener('submitComment', (e) => {
+      comments.push({
+        comment: e.detail,
+        nickName,
+        avatar,
+      });
+      reply.comments = comments;
+    });
+  </script>
+</body>
+
+</html>
